@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1320">
+<title>One Night Werewolf</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1320; --bg2:#171c2e; --card:#1e2439; --line:#2c3450;
+  --text:#ecedf4; --muted:#9aa2bd; --accent:#e6b35a; --accent-ink:#1b1406;
+  --wolf:#e0605a; --village:#6fb4e8; --tanner:#b98be0; --ok:#6fcf97;
+  --radius:16px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 Inter,system-ui,sans-serif}
+body{min-height:100vh;background:radial-gradient(120% 60% at 50% -10%,#26305a 0%,var(--bg) 60%) fixed}
+main{max-width:520px;margin:0 auto;padding:16px 16px calc(32px + env(safe-area-inset-bottom))}
+h1,h2{font-family:Cinzel,serif;letter-spacing:.02em;margin:.2em 0 .4em}
+h1{font-size:28px;text-align:center}
+h2{font-size:20px}
+p{margin:.4em 0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.center{text-align:center}
+.moon{font-size:44px;text-align:center;margin-top:8px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin:12px 0}
+.row{display:flex;gap:8px;align-items:center}
+.row>*{flex:1}
+input{width:100%;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--bg2);color:var(--text);font:inherit;font-size:17px}
+input:focus{outline:2px solid var(--accent);outline-offset:1px}
+button{font:inherit;font-weight:600;border:0;border-radius:12px;padding:14px 16px;background:var(--bg2);color:var(--text);border:1px solid var(--line);width:100%;cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.ghost{background:transparent}
+button:disabled{opacity:.45}
+button.sel{outline:3px solid var(--accent);outline-offset:-1px;background:#2b2a24}
+.btns{display:grid;gap:10px;margin-top:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.code{font-family:Cinzel,serif;font-size:34px;letter-spacing:.25em;text-align:center;color:var(--accent)}
+.players{list-style:none;margin:0;padding:0}
+.players li{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.players li:last-child{border-bottom:0}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none}
+.dot.off{background:#666}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--bg2);border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.done{color:var(--ok);border-color:#2f5d44}
+.x{width:auto;padding:4px 10px;font-size:13px}
+.rolecfg{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.rolecfg:last-child{border-bottom:0}
+.rolecfg .nm{flex:1}
+.step{width:40px;height:40px;padding:0;font-size:20px}
+.cnt{width:24px;text-align:center;font-weight:600}
+.reveal{min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;cursor:pointer;user-select:none;-webkit-user-select:none;background:repeating-linear-gradient(45deg,#1b2136,#1b2136 12px,#1e2540 12px,#1e2540 24px)}
+.reveal.open{background:var(--card)}
+.reveal .ico{font-size:64px;line-height:1}
+.reveal .rn{font-family:Cinzel,serif;font-size:28px;margin:8px 0 4px}
+.team-wolf{color:var(--wolf)} .team-village{color:var(--village)} .team-tanner{color:var(--tanner)}
+.info{background:var(--bg2);border-left:3px solid var(--accent);padding:10px 12px;border-radius:8px;margin:8px 0}
+.timer{font-family:Cinzel,serif;font-size:44px;text-align:center;color:var(--accent)}
+.banner{font-family:Cinzel,serif;font-size:26px;text-align:center;margin:6px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+.status{position:fixed;left:0;right:0;top:0;text-align:center;font-size:13px;padding:6px;background:#5a2b2b;color:#fff;z-index:9;display:none}
+.status.show{display:block}
+#qr{display:flex;justify-content:center;margin:10px 0}
+#qr img,#qr canvas{background:#fff;padding:8px;border-radius:10px;width:180px;height:180px}
+details summary{cursor:pointer;color:var(--muted)}
+.rules li{margin:6px 0}
+</style>
+</head>
+<body>
+<div class="status" id="status"></div>
+<main id="app"></main>
+
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+// ===== LOGIC START (pure game rules, no DOM) =====
+const ROLES = {
+  werewolf:   {name:'Werewolf',    icon:'🐺', team:'wolf',    max:2, desc:"At night you see the other Werewolf. If you're the only one, you may peek at one centre card. Your team wins if no Werewolf dies."},
+  minion:     {name:'Minion',      icon:'🦹', team:'wolf',    max:1, desc:"You see who the Werewolves are, but they don't know you. You win with the Werewolves, even if you die."},
+  mason:      {name:'Mason',       icon:'🧱', team:'village', max:2, desc:"You see the other Mason (if they were dealt in). Village team."},
+  seer:       {name:'Seer',        icon:'🔮', team:'village', max:1, desc:"Look at one other player's card, or two of the centre cards."},
+  robber:     {name:'Robber',      icon:'💰', team:'village', max:1, desc:"You may swap your card with another player's, then look at your new card. You become that role."},
+  troublemaker:{name:'Troublemaker',icon:'🃏', team:'village', max:1, desc:"You may swap the cards of two other players without looking at them."},
+  drunk:      {name:'Drunk',       icon:'🍺', team:'village', max:1, desc:"You must swap your card with a centre card, without looking. You don't know what you are now."},
+  insomniac:  {name:'Insomniac',   icon:'👁️', team:'village', max:1, desc:"At the end of the night you look at your own card to see if it changed."},
+  hunter:     {name:'Hunter',      icon:'🏹', team:'village', max:1, desc:"If you die, the player you voted for dies too."},
+  tanner:     {name:'Tanner',      icon:'🪦', team:'tanner',  max:1, desc:"You hate your job. You win only if you die."},
+  villager:   {name:'Villager',    icon:'🧑‍🌾', team:'village', max:3, desc:"No special power. Find a Werewolf!"}
+};
+const ROLE_ORDER = ['werewolf','minion','mason','seer','robber','troublemaker','drunk','insomniac','hunter','tanner','villager'];
+const CENTRE_NAMES = ['Left','Middle','Right'];
+const MIN_PLAYERS = 3, MAX_PLAYERS = 12;
+
+function defaultRoles(n){
+  const order = ['werewolf','werewolf','seer','robber','troublemaker','villager','insomniac','drunk','tanner','minion','hunter','mason','mason','villager','villager'];
+  const pick = order.slice(0, Math.min(15, Math.max(6, n+3)));
+  const c = {}; ROLE_ORDER.forEach(r=>c[r]=0);
+  pick.forEach(r=>c[r]++);
+  if (c.mason===1){ c.mason=0; c.villager++; }
+  return c;
+}
+function totalCards(c){ return ROLE_ORDER.reduce((a,r)=>a+(c[r]||0),0); }
+function validateSetup(players, c){
+  const n = players.length;
+  if (n < MIN_PLAYERS) return `Need at least ${MIN_PLAYERS} players.`;
+  if (n > MAX_PLAYERS) return `Maximum ${MAX_PLAYERS} players.`;
+  if (c.mason===1) return 'Masons come as a pair (0 or 2).';
+  const t = totalCards(c);
+  if (t !== n+3) return `Pick ${n+3} cards (players + 3). You have ${t}.`;
+  return null;
+}
+function shuffle(a, rng=Math.random){ a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function dealCards(players, c, rng){
+  const deck=[]; ROLE_ORDER.forEach(r=>{for(let i=0;i<(c[r]||0);i++)deck.push(r)});
+  const s = shuffle(deck, rng); const orig={};
+  players.forEach((p,i)=>orig[p.pid]=s[i]);
+  return {orig, centre:s.slice(players.length, players.length+3)};
+}
+function nameOf(S,pid){ const p=S.players.find(p=>p.pid===pid); return p?p.name:'?'; }
+function listNames(arr){ return arr.length<=1?arr.join(''):arr.slice(0,-1).join(', ')+' and '+arr[arr.length-1]; }
+
+// What each player sees/does at night (based on the card they were dealt)
+function nightPrompt(S, pid){
+  const role = S.deal.orig[pid];
+  const others = S.players.filter(p=>p.pid!==pid);
+  const withRole = r => others.filter(p=>S.deal.orig[p.pid]===r).map(p=>p.name);
+  switch(role){
+    case 'werewolf': {
+      const w = withRole('werewolf');
+      if (w.length) return {kind:'none', pre:[`The other Werewolf is ${listNames(w)}.`]};
+      return {kind:'centre1', optional:true, pre:["You're the only Werewolf. You may peek at one centre card."]};
+    }
+    case 'minion': {
+      const w = withRole('werewolf');
+      return {kind:'none', pre:[w.length?`The Werewolf${w.length>1?'s are':' is'} ${listNames(w)}.`:'No players are Werewolves. Both are in the centre!']};
+    }
+    case 'mason': {
+      const m = withRole('mason');
+      return {kind:'none', pre:[m.length?`The other Mason is ${listNames(m)}.`:"You're the only Mason. The other is in the centre."]};
+    }
+    case 'seer': return {kind:'seer', optional:true, pre:["Look at one player's card, or two centre cards."]};
+    case 'robber': return {kind:'player1', optional:true, pre:['Choose a player to rob. You take their card and see what you became.']};
+    case 'troublemaker': return {kind:'player2', optional:true, pre:['Choose two other players to swap. You won\'t see their cards.']};
+    case 'drunk': return {kind:'centre1', optional:false, pre:['Choose a centre card to swap with yours. You won\'t see it.']};
+    case 'insomniac': return {kind:'none', pre:["When everyone's finished, you'll see your card again."]};
+    default: return {kind:'none', pre:['You have no night action. Tap Done so nobody can tell.']};
+  }
+}
+
+// Validate & record a night choice. Info that depends only on the original deal is given immediately.
+function applyNightChoice(S, pid, choice){
+  const n = S.night[pid]; if (!n || n.done) return 'Already done';
+  const pr = nightPrompt(S, pid); const role = S.deal.orig[pid];
+  const isOther = t => t && t!==pid && S.players.some(p=>p.pid===t);
+  const info = [];
+  choice = choice || {};
+  if (choice.skip){
+    if (!pr.optional && pr.kind!=='none') return 'You must choose.';
+    n.choice = {skip:true}; n.done = true; n.info = pr.pre.slice();
+    if (pr.kind!=='none') n.info.push('You chose to do nothing.');
+    return null;
+  }
+  switch(pr.kind){
+    case 'none': break;
+    case 'centre1': {
+      const i = choice.centre && choice.centre[0];
+      if (![0,1,2].includes(i)) return 'Pick a centre card.';
+      if (role==='werewolf') info.push(`The ${CENTRE_NAMES[i]} centre card is ${ROLES[S.deal.centre[i]].name}.`);
+      else info.push(`You swapped with the ${CENTRE_NAMES[i]} centre card. You don't know your new role.`);
+      break;
+    }
+    case 'seer': {
+      if (choice.player){
+        if (!isOther(choice.player)) return 'Pick another player.';
+        info.push(`${nameOf(S,choice.player)} is the ${ROLES[S.deal.orig[choice.player]].name}.`);
+      } else {
+        const c = choice.centre||[];
+        if (c.length!==2 || c[0]===c[1] || !c.every(i=>[0,1,2].includes(i))) return 'Pick two different centre cards.';
+        c.forEach(i=>info.push(`The ${CENTRE_NAMES[i]} centre card is ${ROLES[S.deal.centre[i]].name}.`));
+      }
+      break;
+    }
+    case 'player1': {
+      if (!isOther(choice.player)) return 'Pick another player.';
+      info.push(`You robbed ${nameOf(S,choice.player)}. You are now the ${ROLES[S.deal.orig[choice.player]].name}.`);
+      break;
+    }
+    case 'player2': {
+      const p = choice.players||[];
+      if (p.length!==2 || p[0]===p[1] || !p.every(isOther)) return 'Pick two different other players.';
+      info.push(`You swapped ${nameOf(S,p[0])} and ${nameOf(S,p[1])}.`);
+      break;
+    }
+  }
+  n.choice = choice; n.done = true; n.info = pr.pre.concat(info);
+  return null;
+}
+function allNightDone(S){ return S.players.every(p=>S.night[p.pid]&&S.night[p.pid].done); }
+
+// Apply swaps in the official wake order: Robber, Troublemaker, Drunk; then Insomniac looks.
+function resolveNight(S){
+  const fin = Object.assign({}, S.deal.orig); const centre = S.deal.centre.slice(); const log=[];
+  const byRole = r => S.players.filter(p=>S.deal.orig[p.pid]===r).map(p=>p.pid);
+  const ch = pid => (S.night[pid]&&S.night[pid].choice)||{};
+  const N = pid => nameOf(S,pid);
+  byRole('werewolf').forEach(pid=>{ const c=ch(pid); if(c.centre) log.push(`${N(pid)} (Werewolf) peeked at the ${CENTRE_NAMES[c.centre[0]]} centre card.`); });
+  byRole('seer').forEach(pid=>{ const c=ch(pid);
+    if(c.player) log.push(`${N(pid)} (Seer) looked at ${N(c.player)}'s card.`);
+    else if(c.centre) log.push(`${N(pid)} (Seer) looked at the ${c.centre.map(i=>CENTRE_NAMES[i]).join(' and ')} centre cards.`);
+    else log.push(`${N(pid)} (Seer) did nothing.`); });
+  byRole('robber').forEach(pid=>{ const c=ch(pid);
+    if(c.player){ const t=c.player; [fin[pid],fin[t]]=[fin[t],fin[pid]]; log.push(`${N(pid)} (Robber) robbed ${N(t)} and became ${ROLES[fin[pid]].name}.`); }
+    else log.push(`${N(pid)} (Robber) did nothing.`); });
+  byRole('troublemaker').forEach(pid=>{ const c=ch(pid);
+    if(c.players){ const [a,b]=c.players; [fin[a],fin[b]]=[fin[b],fin[a]]; log.push(`${N(pid)} (Troublemaker) swapped ${N(a)} and ${N(b)}.`); }
+    else log.push(`${N(pid)} (Troublemaker) did nothing.`); });
+  byRole('drunk').forEach(pid=>{ const c=ch(pid);
+    if(c.centre){ const i=c.centre[0]; [fin[pid],centre[i]]=[centre[i],fin[pid]]; log.push(`${N(pid)} (Drunk) swapped with the ${CENTRE_NAMES[i]} centre card and became ${ROLES[fin[pid]].name}.`); } });
+  byRole('insomniac').forEach(pid=>{
+    const now = fin[pid];
+    S.night[pid].info.push(now==='insomniac' ? 'You wake up: you are still the Insomniac.' : `You wake up: you are now the ${ROLES[now].name}!`);
+    log.push(`${N(pid)} (Insomniac) woke up as ${ROLES[now].name}.`);
+  });
+  S.final = fin; S.centreFinal = centre; S.nightLog = log;
+}
+
+function tally(S){
+  const pids = S.players.map(p=>p.pid); const fin = S.final;
+  const counts = {}; pids.forEach(p=>counts[p]=0);
+  pids.forEach(p=>{ const v=S.votes[p]; if(v && counts[v]!==undefined) counts[v]++; });
+  const max = Math.max(0, ...Object.values(counts));
+  let dead = max>=2 ? pids.filter(p=>counts[p]===max) : [];
+  let changed=true;
+  while(changed){ changed=false;
+    dead.slice().forEach(p=>{ if(fin[p]==='hunter'){ const v=S.votes[p]; if(v && !dead.includes(v)){ dead.push(v); changed=true; } } });
+  }
+  const wolves = pids.filter(p=>fin[p]==='werewolf');
+  const minion = pids.filter(p=>fin[p]==='minion');
+  const tannerDied = dead.some(p=>fin[p]==='tanner');
+  const wolfDied = dead.some(p=>fin[p]==='werewolf');
+  let villageWins, wolfWins;
+  if (wolves.length){ villageWins = wolfDied; wolfWins = !wolfDied && !tannerDied; }
+  else {
+    villageWins = dead.length===0;
+    wolfWins = minion.length>0 && !tannerDied && dead.some(p=>fin[p]!=='minion');
+  }
+  const winners = pids.filter(p=>{ const t=ROLES[fin[p]].team;
+    return (t==='village'&&villageWins)||(t==='wolf'&&wolfWins)||(t==='tanner'&&dead.includes(p)); });
+  const headline = [];
+  if (tannerDied) headline.push('The Tanner wins');
+  if (villageWins) headline.push('The Village wins');
+  if (wolfWins) headline.push('The Werewolves win');
+  if (!headline.length) headline.push('Nobody wins');
+  return {counts, dead, winners, headline: headline.join(' · '), villageWins, wolfWins, tannerDied};
+}
+// ===== LOGIC END =====
+
+// ===== APP =====
+const $app = document.getElementById('app');
+const $status = document.getElementById('status');
+const LS = {
+  get(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} },
+  del(k){ try{ localStorage.removeItem(k); }catch(e){} }
+};
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rid = n => { const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; const r=new Uint32Array(n); crypto.getRandomValues(r); r.forEach(x=>s+=a[x%a.length]); return s; };
+const PEER_PREFIX = 'onuw-game-';
+const params = new URLSearchParams(location.search);
+const urlCode = (params.get('g')||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+
+let me = LS.get('onuw_me', null);
+if (!me) { me = {pid: rid(12), name:''}; LS.set('onuw_me', me); }
+
+let mode = 'home';      // home | host | client
+let view = null;        // the private view this phone renders
+let S = null;           // host-only authoritative state
+let peer = null, conns = {}, conn = null;
+let sel = {};           // local selection for night/vote
+let lastPhaseKey = '';
+let revealOpen = false, revealTimer = null;
+let timerEndLocal = 0;
+let errMsg = '';
+
+function setStatus(t){ $status.textContent=t||''; $status.classList.toggle('show', !!t); }
+function joinLink(code){ return location.origin + location.pathname + '?g=' + code; }
+
+// ---------- HOST ----------
+function newHostState(code){
+  return {code, hostPid: me.pid, phase:'lobby', round:1, players:[{pid:me.pid, name:me.name}],
+    roles: defaultRoles(3), dayMinutes:5, deal:null, final:null, centreFinal:null, night:{}, ready:{}, votes:{}, dayEnd:0, results:null, nightLog:[], customRoles:false};
+}
+function saveHost(){ LS.set('onuw_host', S); }
+function startHosting(code, resume){
+  mode='host';
+  if (!resume){ S = newHostState(code); saveHost(); }
+  history.replaceState(null,'','?g='+S.code);
+  openHostPeer();
+  broadcast();
+}
+function openHostPeer(){
+  if (peer) try{ peer.destroy(); }catch(e){}
+  setStatus('Connecting…');
+  peer = new Peer(PEER_PREFIX + S.code);
+  peer.on('open', ()=>setStatus(''));
+  peer.on('connection', c=>{
+    c.on('data', m=>hostHandle(c, m));
+    c.on('close', ()=>{ for(const k in conns) if(conns[k]===c){ delete conns[k]; } broadcast(); });
+  });
+  peer.on('disconnected', ()=>{ setStatus('Reconnecting…'); try{ peer.reconnect(); }catch(e){} });
+  peer.on('error', e=>{
+    if (e.type==='unavailable-id'){ setStatus('Reclaiming game… (a few seconds)'); setTimeout(openHostPeer, 4000); }
+    else if (e.type==='network' || e.type==='server-error' || e.type==='socket-error'){ setStatus('Connection problem, retrying…'); setTimeout(openHostPeer, 4000); }
+  });
+}
+function hostHandle(c, m){
+  if (!m || typeof m!=='object') return;
+  if (m.t==='join'){
+    const name = String(m.name||'').trim().slice(0,20) || 'Player';
+    const pid = String(m.pid||'').slice(0,20); if(!pid) return;
+    let p = S.players.find(p=>p.pid===pid);
+    if (!p){
+      if (S.phase!=='lobby'){ c.send({t:'error', msg:'This game has already started. Wait for the next round.'}); return; }
+      if (S.players.length>=MAX_PLAYERS){ c.send({t:'error', msg:'The game is full.'}); return; }
+      p = {pid, name}; S.players.push(p);
+      if (!S.customRoles) S.roles = defaultRoles(S.players.length);
+    } else if (S.phase==='lobby') p.name = name;
+    conns[pid] = c; c._pid = pid;
+    saveHost(); broadcast(); return;
+  }
+  const pid = c._pid; if (!pid) return;
+  hostAction(pid, m);
+}
+function hostAction(pid, m){
+  if (m.t==='ready' && S.phase==='role'){ S.ready[pid]=true; if (S.players.every(p=>S.ready[p.pid])) S.phase='night'; }
+  else if (m.t==='night' && S.phase==='night'){
+    const err = applyNightChoice(S, pid, m.choice);
+    if (err){ sendTo(pid, {t:'error', msg:err}); }
+    if (allNightDone(S)){ resolveNight(S); S.phase='day'; S.dayEnd = Date.now()+S.dayMinutes*60000; }
+  }
+  else if (m.t==='vote' && S.phase==='day'){
+    const t = m.target;
+    if (t!==pid && S.players.some(p=>p.pid===t)) S.votes[pid]=t;
+    if (S.players.every(p=>S.votes[p.pid])) finishGame();
+  }
+  saveHost(); broadcast();
+}
+function finishGame(){ S.results = tally(S); S.phase='results'; }
+function sendTo(pid, msg){ const c=conns[pid]; if (c && c.open) try{ c.send(msg); }catch(e){} }
+function broadcast(){
+  S.players.forEach(p=>{ if (p.pid===me.pid) return; sendTo(p.pid, {t:'view', view:viewFor(p.pid)}); });
+  receiveView(viewFor(me.pid));
+}
+function viewFor(pid){
+  const online = p => p.pid===S.hostPid || !!(conns[p.pid] && conns[p.pid].open);
+  const v = {code:S.code, phase:S.phase, round:S.round, you:pid, isHost: pid===S.hostPid, hostName:nameOf(S,S.hostPid),
+    players:S.players.map(p=>({pid:p.pid, name:p.name, online:online(p), ready:!!S.ready[p.pid], done:!!(S.night[p.pid]&&S.night[p.pid].done), voted:!!S.votes[p.pid]})),
+    roles:S.roles, dayMinutes:S.dayMinutes, inGame: S.players.some(p=>p.pid===pid)};
+  if (S.phase!=='lobby' && S.deal && S.deal.orig[pid]){
+    v.myRole = S.deal.orig[pid];
+    const n = S.night[pid];
+    if (S.phase==='night'){ v.prompt = nightPrompt(S,pid); v.nightDone = n.done; v.info = n.done ? n.info : []; }
+    if (S.phase==='day' || S.phase==='results'){ v.info = n.info; v.myVote = S.votes[pid]||null; v.remaining = Math.max(0, S.dayEnd-Date.now()); }
+  }
+  if (S.phase==='results'){
+    v.results = {headline:S.results.headline, dead:S.results.dead, winners:S.results.winners, counts:S.results.counts,
+      orig:S.deal.orig, final:S.final, centre:S.deal.centre, centreFinal:S.centreFinal, votes:S.votes, log:S.nightLog};
+  }
+  return v;
+}
+function hostStart(){
+  const err = validateSetup(S.players, S.roles); if (err){ errMsg=err; render(); return; }
+  S.deal = dealCards(S.players, S.roles); S.final=null; S.night={}; S.ready={}; S.votes={}; S.results=null; S.nightLog=[];
+  S.players.forEach(p=>S.night[p.pid]={done:false, info:[], choice:null});
+  S.phase='role'; saveHost(); broadcast();
+}
+function hostAgain(){ S.phase='lobby'; S.round++; S.deal=null; S.final=null; S.night={}; S.ready={}; S.votes={}; S.results=null; saveHost(); broadcast(); }
+
+// ---------- CLIENT ----------
+function startClient(code){
+  mode='client';
+  history.replaceState(null,'','?g='+code);
+  view = {phase:'connecting', code};
+  render();
+  if (peer) try{ peer.destroy(); }catch(e){}
+  setStatus('Connecting…');
+  peer = new Peer();
+  peer.on('open', ()=>connectToHost(code));
+  peer.on('disconnected', ()=>{ try{ peer.reconnect(); }catch(e){} });
+  peer.on('error', e=>{
+    if (e.type==='peer-unavailable'){ setStatus(''); errMsg = "Can't find game "+code+". Check the code, or ask the host to keep their screen on."; view={phase:'notfound', code}; render(); }
+    else { setStatus('Connection problem, retrying…'); setTimeout(()=>startClient(code), 3000); }
+  });
+}
+function connectToHost(code){
+  conn = peer.connect(PEER_PREFIX + code, {reliable:true});
+  conn.on('open', ()=>{ setStatus(''); conn.send({t:'join', pid:me.pid, name:me.name}); });
+  conn.on('data', m=>{
+    if (m.t==='view') receiveView(m.view);
+    else if (m.t==='error'){ errMsg = m.msg; render(); }
+  });
+  conn.on('close', ()=>{ setStatus('Lost connection. Reconnecting…'); setTimeout(()=>{ if (peer && !peer.destroyed) connectToHost(code); }, 2000); });
+}
+function act(msg){
+  errMsg='';
+  if (mode==='host') hostAction(me.pid, msg);
+  else if (conn && conn.open) conn.send(msg);
+  else setStatus('Not connected. Reconnecting…');
+}
+document.addEventListener('visibilitychange', ()=>{
+  if (document.visibilityState!=='visible') return;
+  if (mode==='client' && (!conn || !conn.open) && view && view.code) startClient(view.code);
+  if (mode==='host' && peer && peer.disconnected) try{ peer.reconnect(); }catch(e){}
+});
+
+function receiveView(v){
+  const key = v.phase+'|'+v.round;
+  if (key!==lastPhaseKey){ sel={}; revealOpen=false; errMsg=''; lastPhaseKey=key; }
+  if (v.remaining!=null) timerEndLocal = Date.now()+v.remaining;
+  view = v; render();
+}
+
+// ---------- RENDER ----------
+function roleBadge(r){ const R=ROLES[r]; return `<span class="team-${R.team}">${R.icon} ${esc(R.name)}</span>`; }
+function playerName(pid){ const p=view.players.find(p=>p.pid===pid); return p?p.name:'?'; }
+function errHtml(){ return errMsg?`<div class="info" style="border-color:var(--wolf)">${esc(errMsg)}</div>`:''; }
+
+function render(){
+  if (mode==='home') return renderHome();
+  if (!view) return;
+  const ph = view.phase;
+  if (ph==='connecting'){ $app.innerHTML = `<div class="moon">🌕</div><h1>Joining ${esc(view.code)}…</h1><p class="center muted">Connecting to the host's phone.</p>`; return; }
+  if (ph==='notfound'){ $app.innerHTML = `<div class="moon">🌑</div><h1>Game not found</h1>${errHtml()}<div class="btns"><button class="primary" data-a="retry">Try again</button><button data-a="home">Back</button></div>`; return; }
+  if (view.inGame===false){ $app.innerHTML = `<div class="moon">🌑</div><h1>Game in progress</h1>${errHtml()}<p class="center muted">You'll be able to join when the host starts a new round.</p>`; return; }
+  ({lobby:renderLobby, role:renderRole, night:renderNight, day:renderDay, results:renderResults})[ph]();
+}
+
+function renderHome(){
+  $app.innerHTML = `
+  <div class="moon">🌕</div>
+  <h1>One Night Werewolf</h1>
+  <p class="center muted">Everyone plays on their own phone. Roles and actions stay secret.</p>
+  <div class="panel">
+    <label class="small muted">Your name</label>
+    <input id="name" maxlength="20" autocomplete="off" placeholder="e.g. Mike" value="${esc(me.name)}">
+  </div>
+  ${urlCode ? `
+  <div class="panel center"><p class="muted">Joining game</p><div class="code">${esc(urlCode)}</div>
+    ${errHtml()}<div class="btns"><button class="primary" data-a="join">Join game</button></div></div>
+  <p class="center small muted"><a href="${esc(location.pathname)}" style="color:var(--muted)">Host a different game instead</a></p>` : `
+  <div class="btns"><button class="primary" data-a="host">Host a new game</button></div>
+  <div class="panel"><label class="small muted">Or join with a code</label>
+    <div class="row" style="margin-top:6px"><input id="code" maxlength="6" autocapitalize="characters" placeholder="CODE" style="text-transform:uppercase"><button data-a="joincode" style="flex:0 0 90px">Join</button></div>
+    ${errHtml()}</div>`}
+  ${rulesHtml()}`;
+}
+function rulesHtml(){
+  return `<details class="panel"><summary>How to play</summary><ol class="rules small">
+  <li>The host shares the link. Everyone opens it and joins.</li>
+  <li>The host picks which role cards are used (players + 3; three go face-down in the centre).</li>
+  <li>Check your card privately, then tap Ready.</li>
+  <li>Night: everyone does their secret action on their phone at the same time. Everyone taps something, so nobody can tell who's who.</li>
+  <li>Day: discuss and bluff. Then everyone secretly votes for who to kill.</li>
+  <li>The player(s) with the most votes die (a single vote each means nobody dies). Kill a Werewolf and the village wins.</li></ol></details>`;
+}
+
+function renderLobby(){
+  const v=view, n=v.players.length, need=n+3, tot=totalCards(v.roles);
+  const link = joinLink(v.code);
+  let html = `<div class="moon">🌕</div><h1>Lobby</h1>
+  <div class="panel center"><p class="muted small">Game code</p><div class="code">${esc(v.code)}</div>
+    ${v.isHost?`<div id="qr"></div><div class="btns grid2"><button data-a="share">Share link</button><button data-a="copy">Copy link</button></div>`:`<p class="muted small">Waiting for ${esc(v.hostName)} to start…</p>`}
+  </div>
+  <div class="panel"><h2>Players (${n})</h2><ul class="players">${v.players.map(p=>`<li><span class="dot ${p.online?'':'off'}"></span><span style="flex:1">${esc(p.name)}${p.pid===v.you?' <span class="muted">(you)</span>':''}</span>${v.isHost && p.pid!==v.you?`<button class="x ghost" data-a="kick" data-p="${esc(p.pid)}">Remove</button>`:''}</li>`).join('')}</ul></div>`;
+  html += `<div class="panel"><div class="row"><h2 style="flex:1">Cards</h2><span class="tag ${tot===need?'done':''}">${tot} / ${need}</span></div>
+  ${ROLE_ORDER.map(r=>{ const c=v.roles[r]||0; if(!v.isHost && !c) return '';
+    return `<div class="rolecfg"><span class="nm">${roleBadge(r)}</span>${v.isHost?`<button class="step" data-a="dec" data-r="${r}">−</button>`:''}<span class="cnt">${c}</span>${v.isHost?`<button class="step" data-a="inc" data-r="${r}">+</button>`:''}</div>`; }).join('')}
+  ${v.isHost?`<div class="btns"><button class="ghost small" data-a="suggest">Use suggested cards</button></div>`:''}</div>`;
+  if (v.isHost){
+    html += `<div class="panel"><div class="row"><span style="flex:1">Discussion time</span><button class="step" data-a="tdec">−</button><span class="cnt" style="width:48px">${v.dayMinutes}m</span><button class="step" data-a="tinc">+</button></div></div>
+    ${errHtml()}<div class="btns"><button class="primary" data-a="start" ${n<MIN_PLAYERS?'disabled':''}>${n<MIN_PLAYERS?`Need ${MIN_PLAYERS}+ players`:'Deal cards'}</button></div>`;
+  }
+  html += rulesHtml();
+  $app.innerHTML = html;
+  if (v.isHost && window.QRCode){ try{ new QRCode(document.getElementById('qr'), {text:link, width:180, height:180, correctLevel:QRCode.CorrectLevel.M}); }catch(e){} }
+}
+
+function revealCard(role, label){
+  const R = ROLES[role];
+  return `<div class="panel reveal ${revealOpen?'open':''}" data-a="reveal">
+    ${revealOpen?`<div class="ico">${R.icon}</div><div class="rn team-${R.team}">${esc(R.name)}</div><p class="small muted">${esc(R.desc)}</p><p class="small muted" style="margin-top:10px">Tap to hide</p>`
+    :`<div class="ico">🂠</div><div class="rn">${esc(label||'Your card')}</div><p class="small muted">Shield your screen, then tap to reveal</p>`}
+  </div>`;
+}
+function progress(key, label){
+  const done = view.players.filter(p=>p[key]).length;
+  return `<div class="panel"><div class="row"><span style="flex:1" class="muted">${label}</span><span class="tag">${done} / ${view.players.length}</span></div>
+  <ul class="players">${view.players.map(p=>`<li><span class="dot ${p.online?'':'off'}"></span><span style="flex:1">${esc(p.name)}</span><span class="tag ${p[key]?'done':''}">${p[key]?'✓':'…'}</span></li>`).join('')}</ul></div>`;
+}
+
+function renderRole(){
+  const v=view; const ready = v.players.find(p=>p.pid===v.you).ready;
+  $app.innerHTML = `<h1>Your card</h1>${revealCard(v.myRole,'Your starting card')}
+  <div class="btns"><button class="primary" data-a="ready" ${ready?'disabled':''}>${ready?'Waiting for others…':"I've seen it. Ready for night"}</button></div>
+  ${progress('ready','Ready')}`;
+}
+
+function renderNight(){
+  const v=view, pr=v.prompt;
+  let body='';
+  if (v.nightDone){
+    body = `<div class="panel"><h2>Done</h2>${v.info.map(t=>`<div class="info">${esc(t)}</div>`).join('')}
+      <p class="small muted">Keep your phone close. Waiting for everyone else to finish their night actions…</p></div>`;
+  } else {
+    body = `<div class="panel"><h2>Your night action</h2>${pr.pre.map(t=>`<div class="info">${esc(t)}</div>`).join('')}${choiceUI(pr)}${errHtml()}</div>`;
+  }
+  $app.innerHTML = `<div class="moon">🌙</div><h1>Night</h1>
+  <p class="center muted small">Everyone acts at the same time. Keep your screen hidden.</p>
+  ${revealCard(v.myRole,'Your starting card')}${body}${progress('done','Finished')}`;
+}
+function centreBtns(multi){
+  const s = sel.centre||[];
+  return `<div class="grid3">${[0,1,2].map(i=>`<button data-a="pickc" data-i="${i}" data-m="${multi}" class="${s.includes(i)?'sel':''}">🂠<br>${CENTRE_NAMES[i]}</button>`).join('')}</div>`;
+}
+function playerBtns(multi){
+  const s = sel.players||[];
+  return `<div class="grid2">${view.players.filter(p=>p.pid!==view.you).map(p=>`<button data-a="pickp" data-p="${esc(p.pid)}" data-m="${multi}" class="${s.includes(p.pid)?'sel':''}">${esc(p.name)}</button>`).join('')}</div>`;
+}
+function choiceUI(pr){
+  const skip = pr.optional?`<button class="ghost" data-a="skip">Do nothing</button>`:'';
+  switch(pr.kind){
+    case 'none': return `<div class="btns"><button class="primary" data-a="donenone">Done</button></div>`;
+    case 'centre1': return `<p class="small muted">Centre cards</p>${centreBtns(1)}<div class="btns"><button class="primary" data-a="confirm" ${(sel.centre||[]).length===1?'':'disabled'}>Confirm</button>${skip}</div>`;
+    case 'player1': return `<p class="small muted">Players</p>${playerBtns(1)}<div class="btns"><button class="primary" data-a="confirm" ${(sel.players||[]).length===1?'':'disabled'}>Confirm</button>${skip}</div>`;
+    case 'player2': return `<p class="small muted">Pick two players</p>${playerBtns(2)}<div class="btns"><button class="primary" data-a="confirm" ${(sel.players||[]).length===2?'':'disabled'}>Confirm swap</button>${skip}</div>`;
+    case 'seer': {
+      const ok = (sel.players||[]).length===1 || (sel.centre||[]).length===2;
+      return `<p class="small muted">One player…</p>${playerBtns('seerp')}<p class="small muted" style="margin-top:12px">…or two centre cards</p>${centreBtns('seerc')}
+      <div class="btns"><button class="primary" data-a="confirm" ${ok?'':'disabled'}>Look</button>${skip}</div>`;
+    }
+  }
+  return '';
+}
+
+function renderDay(){
+  const v=view;
+  const voteTarget = v.myVote;
+  $app.innerHTML = `<div class="moon">☀️</div><h1>Day</h1>
+  <div class="panel center"><div class="timer" id="timer">--:--</div><p class="small muted">Discuss, accuse, bluff. Then vote in secret.</p></div>
+  ${revealCard(v.myRole,'Your starting card')}
+  <div class="panel"><details><summary>Your night info (tap to show)</summary>${(v.info||[]).map(t=>`<div class="info">${esc(t)}</div>`).join('')||'<p class="muted small">Nothing.</p>'}</details></div>
+  <div class="panel"><h2>Vote to kill</h2>
+    ${voteTarget?`<div class="info">You voted for <b>${esc(playerName(voteTarget))}</b>. You can change it until everyone has voted.</div>`:'<p class="small muted">Pick someone. Nobody sees your vote until the end.</p>'}
+    <div class="grid2">${v.players.filter(p=>p.pid!==v.you).map(p=>`<button data-a="vote" data-p="${esc(p.pid)}" class="${voteTarget===p.pid?'sel':''}">${esc(p.name)}</button>`).join('')}</div>
+  </div>
+  ${progress('voted','Voted')}
+  <div class="panel small muted"><b>Cards in this game:</b> ${ROLE_ORDER.filter(r=>v.roles[r]).map(r=>`${ROLES[r].icon} ${ROLES[r].name}${v.roles[r]>1?' ×'+v.roles[r]:''}`).join(', ')}</div>
+  ${v.isHost?`<div class="btns"><button data-a="addmin">+1 minute</button><button data-a="reveal_now">End voting & reveal</button></div>`:''}`;
+  tick();
+}
+function tick(){
+  const el = document.getElementById('timer'); if(!el) return;
+  const ms = Math.max(0, timerEndLocal-Date.now()); const s=Math.ceil(ms/1000);
+  el.textContent = ms>0 ? `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}` : 'Vote now!';
+}
+setInterval(tick, 500);
+
+function renderResults(){
+  const v=view, r=v.results; const won = r.winners.includes(v.you);
+  const rows = v.players.map(p=>{ const died=r.dead.includes(p.pid);
+    return `<tr><td>${died?'☠️ ':''}<b>${esc(p.name)}</b>${p.pid===v.you?' <span class="muted">(you)</span>':''}<br><span class="small muted">${r.counts[p.pid]||0} vote${(r.counts[p.pid]||0)===1?'':'s'}${r.votes[p.pid]?' · voted '+esc(playerName(r.votes[p.pid])):''}</span></td>
+    <td>${roleBadge(r.orig[p.pid])}${r.orig[p.pid]!==r.final[p.pid]?`<br><span class="small muted">→</span> ${roleBadge(r.final[p.pid])}`:''}</td>
+    <td>${r.winners.includes(p.pid)?'🏆':''}</td></tr>`; }).join('');
+  $app.innerHTML = `<div class="moon">${won?'🏆':'🌑'}</div>
+  <div class="banner">${esc(r.headline)}</div>
+  <p class="center" style="font-size:20px;font-weight:600">${won?'You won!':'You lost.'}</p>
+  <p class="center muted small">${r.dead.length?'Killed: '+r.dead.map(p=>esc(playerName(p))).join(', '):'Nobody was killed.'}</p>
+  <div class="panel"><table><tr><th>Player</th><th>Card (start → end)</th><th></th></tr>${rows}</table></div>
+  <div class="panel"><h2>Centre cards</h2><p>${r.centreFinal.map((c,i)=>`${CENTRE_NAMES[i]}: ${roleBadge(c)}`).join('<br>')}</p></div>
+  <div class="panel"><h2>What happened at night</h2>${r.log.length?r.log.map(t=>`<p class="small">${esc(t)}</p>`).join(''):'<p class="small muted">Nothing changed hands.</p>'}</div>
+  ${v.isHost?`<div class="btns"><button class="primary" data-a="again">Play again</button></div>`:`<p class="center muted small">Waiting for ${esc(v.hostName)} to start another round.</p>`}`;
+}
+
+// ---------- EVENTS ----------
+document.addEventListener('click', e=>{
+  const b = e.target.closest('[data-a]'); if(!b) return;
+  const a = b.dataset.a;
+  const getName = ()=>{ const el=document.getElementById('name'); const n=(el?el.value:me.name).trim().slice(0,20); if(!n){ errMsg='Enter your name first.'; render(); return null; } me.name=n; LS.set('onuw_me',me); errMsg=''; return n; };
+  switch(a){
+    case 'host': if(getName()) startHosting(rid(4), false); break;
+    case 'join': if(getName()) startClient(urlCode); break;
+    case 'joincode': { const c=(document.getElementById('code').value||'').toUpperCase().replace(/[^A-Z0-9]/g,''); if(!c){errMsg='Enter a code.'; render(); break;} if(getName()) startClient(c); break; }
+    case 'retry': errMsg=''; startClient(view.code); break;
+    case 'home': location.href = location.pathname; break;
+    case 'share': { const link=joinLink(view.code); if(navigator.share) navigator.share({title:'One Night Werewolf', text:'Join my game', url:link}).catch(()=>{}); else copy(link); break; }
+    case 'copy': copy(joinLink(view.code)); break;
+    case 'kick': if (mode==='host'){ S.players=S.players.filter(p=>p.pid!==b.dataset.p); try{ conns[b.dataset.p]&&conns[b.dataset.p].send({t:'error',msg:'The host removed you from the game.'}); }catch(_){} delete conns[b.dataset.p]; if(!S.customRoles) S.roles=defaultRoles(S.players.length); saveHost(); broadcast(); } break;
+    case 'inc': case 'dec': if (mode==='host'){ const r=b.dataset.r; let c=S.roles[r]||0; const R=ROLES[r];
+        if (r==='mason') c = a==='inc'?2:0; else c = Math.max(0, Math.min(R.max, c+(a==='inc'?1:-1)));
+        S.roles[r]=c; S.customRoles=true; errMsg=''; saveHost(); broadcast(); } break;
+    case 'suggest': if (mode==='host'){ S.roles=defaultRoles(S.players.length); S.customRoles=false; errMsg=''; saveHost(); broadcast(); } break;
+    case 'tinc': case 'tdec': if (mode==='host'){ S.dayMinutes=Math.max(1,Math.min(15,S.dayMinutes+(a==='tinc'?1:-1))); saveHost(); broadcast(); } break;
+    case 'start': if (mode==='host') hostStart(); break;
+    case 'reveal': revealOpen=!revealOpen; clearTimeout(revealTimer); if(revealOpen) revealTimer=setTimeout(()=>{revealOpen=false; render();}, 6000); render(); break;
+    case 'ready': act({t:'ready'}); break;
+    case 'donenone': act({t:'night', choice:{}}); break;
+    case 'skip': act({t:'night', choice:{skip:true}}); break;
+    case 'pickc': { const i=+b.dataset.i, m=b.dataset.m; let s=sel.centre||[];
+        if (m==='1') s=[i]; else { s = s.includes(i)? s.filter(x=>x!==i) : s.concat(i).slice(-2); }
+        sel.centre=s; if (m==='seerc') sel.players=[]; render(); break; }
+    case 'pickp': { const p=b.dataset.p, m=b.dataset.m; let s=sel.players||[];
+        if (m==='1' || m==='seerp') s = s[0]===p&&m==='seerp'?[]:[p]; else { s = s.includes(p)? s.filter(x=>x!==p) : s.concat(p).slice(-2); }
+        sel.players=s; if (m==='seerp') sel.centre=[]; render(); break; }
+    case 'confirm': { const k=view.prompt.kind; let choice={};
+        if (k==='centre1') choice={centre:sel.centre};
+        else if (k==='player1') choice={player:sel.players[0]};
+        else if (k==='player2') choice={players:sel.players};
+        else if (k==='seer') choice = (sel.players||[]).length ? {player:sel.players[0]} : {centre:sel.centre};
+        act({t:'night', choice}); break; }
+    case 'vote': act({t:'vote', target:b.dataset.p}); break;
+    case 'addmin': if (mode==='host'){ S.dayEnd = Math.max(S.dayEnd, Date.now())+60000; saveHost(); broadcast(); } break;
+    case 'reveal_now': if (mode==='host' && confirm('End voting now? Anyone who hasn\'t voted gets no vote.')){ finishGame(); saveHost(); broadcast(); } break;
+    case 'again': if (mode==='host') hostAgain(); break;
+  }
+});
+function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{ setStatus('Link copied'); setTimeout(()=>setStatus(''),1500); }).catch(()=>prompt('Copy this link:', t)); }
+
+// ---------- BOOT ----------
+(function boot(){
+  if (typeof Peer==='undefined'){ $app.innerHTML='<h1>Couldn\'t load</h1><p class="center muted">The game library didn\'t load. Check your internet connection and refresh.</p>'; return; }
+  const hosted = LS.get('onuw_host', null);
+  if (urlCode && hosted && hosted.code===urlCode && hosted.hostPid===me.pid){ S=hosted; startHosting(urlCode, true); return; }
+  if (urlCode && me.name){ startClient(urlCode); return; }
+  render();
+})();
+</script>
+</body>
+</html>
